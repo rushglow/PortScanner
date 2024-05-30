@@ -3,9 +3,11 @@ package com.example.portscanner
 import android.app.Dialog
 import android.app.ProgressDialog
 import android.opengl.Visibility
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.DialogCompat
@@ -27,51 +29,39 @@ import retrofit2.Response
 
 
 class DomainActivity : AppCompatActivity(), PortsAdapter.OnClickListener {
-    lateinit var mService: DomainService
     lateinit var portAdapter: PortsAdapter
     lateinit var vulnersAdapter: VulnersAdapter
     lateinit var binding: ActivityDomainBinding
     lateinit var domainCVE: DomainCVE
 
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val address = intent.extras!!.getString("address")
-        val layoutManager =
-            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        val cveLayoutManager = LinearLayoutManager(this)
+
+        domainCVE = intent.getSerializableExtra("domain", DomainCVE::class.java)!!
+
         binding = ActivityDomainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        val cveLayoutManager = LinearLayoutManager(this)
         binding.rvOpenPorts.layoutManager = layoutManager
         binding.rvCveList.layoutManager = cveLayoutManager
-        mService = Common.domainService
 
-        portAdapter = PortsAdapter(this, mutableListOf<Ports>(Ports(1,"12","tcp",
-            mutableListOf<Vulners>(), Serv(11, "serv", "prod", "vers"))))
+        binding.tvDomainName.text = domainCVE.address
+
+        portAdapter = PortsAdapter(this, domainCVE.openPorts)
+        binding.rvOpenPorts.adapter = portAdapter
         portAdapter.notifyDataSetChanged()
-        vulnersAdapter = VulnersAdapter(mutableListOf(Vulners(1, "9.0", "Vuln", "true")))
+
+        vulnersAdapter = VulnersAdapter(mutableListOf())
+        binding.rvCveList.adapter = vulnersAdapter
         vulnersAdapter.notifyDataSetChanged()
 
-        getData(address!!)
-
     }
 
-     fun getData(address: String) {
-        mService.getDomainCVE(Address(address)).enqueue(object : Callback<DomainCVE> {
 
-            override fun onFailure(p0: Call<DomainCVE>, p1: Throwable) {
-                Toast.makeText(applicationContext, "WRONG DOMAIN PLS BACK", Toast.LENGTH_LONG).show()
-            }
-
-            override fun onResponse(p0: Call<DomainCVE>, response: Response<DomainCVE>) {
-                domainCVE = response.body()!!
-                portAdapter = PortsAdapter(portAdapter.listener, response.body()!!.openPorts)
-                portAdapter.notifyDataSetChanged()
-                binding.tvDomainName.text = domainCVE.address
-                binding.rvOpenPorts.adapter = portAdapter
-            }
-        })
-    }
 
     override fun onClick(ports: Ports) {
         binding.tvService.text = ports.service.product

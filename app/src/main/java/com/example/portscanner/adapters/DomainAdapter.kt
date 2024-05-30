@@ -9,10 +9,16 @@ import com.example.portscanner.R
 import com.example.portscanner.databinding.DomainItemsBinding
 import com.scanner.scanner.model.DomainCVE
 
-class DomainAdapter(private val context: Context, private val domainCVE: DomainCVE): RecyclerView.Adapter<DomainAdapter.DomainViewHolder>() {
+class DomainAdapter(val listener: OnClickListener, private val domain: MutableList<DomainCVE>, private val load: Boolean): RecyclerView.Adapter<DomainAdapter.DomainViewHolder>() {
 
-    class DomainViewHolder(itemView: View): RecyclerView.ViewHolder(itemView){
-        val binding = DomainItemsBinding.bind(itemView)
+    class DomainViewHolder(item: View): RecyclerView.ViewHolder(item){
+        val binding = DomainItemsBinding.bind(item)
+
+        fun bind(domain: DomainCVE, listener: OnClickListener) = with(binding){
+            itemView.setOnClickListener {
+                listener.onClick(domain)
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DomainViewHolder {
@@ -21,11 +27,23 @@ class DomainAdapter(private val context: Context, private val domainCVE: DomainC
     }
 
     override fun getItemCount(): Int {
-        return 1
+        return domain.size
     }
 
     override fun onBindViewHolder(holder: DomainViewHolder, position: Int) {
-        TODO("Not yet implemented")
+        holder.binding.tvDomainName.text = domain[position].address
+        holder.bind(domain[position], listener)
+        if (load){
+            holder.binding.ivDone.visibility = View.INVISIBLE
+            holder.binding.ivLoad.visibility = View.VISIBLE
+        }else{
+            holder.binding.ivDone.visibility = View.VISIBLE
+            holder.binding.ivLoad.visibility = View.INVISIBLE
+        }
+    }
+
+    interface OnClickListener {
+        fun onClick(domain: DomainCVE)
     }
 }
 
